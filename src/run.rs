@@ -1,3 +1,11 @@
+use std::env;
+use tracing::{metadata::LevelFilter, Level};
+use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
+use tracing_subscriber::{
+    fmt::format::{DefaultFields, FmtSpan, Format},
+    FmtSubscriber,
+};
+
 pub fn get_logger() -> (
     FmtSubscriber<DefaultFields, Format, LevelFilter, NonBlocking>,
     WorkerGuard,

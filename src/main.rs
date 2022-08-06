@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate rocket;
 mod run;
+use run::get_logger;
+use tracing::instrument;
 
 use std::sync::Arc;
 
@@ -131,27 +133,32 @@ struct ClientRef {
     pub client: Arc<Client>,
 }
 
+#[instrument(skip(closure, client))]
 async fn extract_refined<F>(closure: F, client: &Client) -> status::Accepted<String>
 where
     F: Fn(Refined) -> String,
 {
-    status::Accepted(get_refined(client).await.ok().map(closure))
+    let val = get_refined(client).await.ok().map(closure);
+    tracing::debug!("Got value: {:?}", val);
+    status::Accepted(val)
 }
 
+#[instrument(skip(state))]
 async fn extract_single(
     series: &str,
     field: &str,
     targ: &str,
     state: &State<ClientRef>,
 ) -> status::Accepted<String> {
-    status::Accepted(
-        get_single_value(series, field, targ, state.client.as_ref())
-            .await
-            .ok()
-            .map(|v| v.value.to_string()),
-    )
+    let val = get_single_value(series, field, targ, state.client.as_ref())
+        .await
+        .ok()
+        .map(|v| v.value.to_string());
+    tracing::debug!("Got value: {:?}", val);
+    status::Accepted(val)
 }
 
+#[instrument(skip(state))]
 #[get("/carChargerUsage")]
 async fn car_charger_usage(state: &State<ClientRef>) -> status::Accepted<String> {
     status::Accepted(
@@ -162,6 +169,7 @@ async fn car_charger_usage(state: &State<ClientRef>) -> status::Accepted<String>
     )
 }
 
+#[instrument(skip(state))]
 #[get("/easeeLadeMengde")]
 async fn easee_lade_mengde(state: &State<ClientRef>) -> status::Accepted<String> {
     status::Accepted(
@@ -172,6 +180,7 @@ async fn easee_lade_mengde(state: &State<ClientRef>) -> status::Accepted<String>
     )
 }
 
+#[instrument(skip(state))]
 #[get("/easeeEnergyPerHour")]
 async fn easee_energy_per_hour(state: &State<ClientRef>) -> status::Accepted<String> {
     status::Accepted(
@@ -187,21 +196,25 @@ async fn easee_energy_per_hour(state: &State<ClientRef>) -> status::Accepted<Str
     )
 }
 
+#[instrument(skip(state))]
 #[get("/APIpower")]
 async fn api_power(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_single("liveMeasurement", "field", "power", state).await
 }
 
+#[instrument(skip(state))]
 #[get("/APIlastMeterConsumption")]
 async fn api_last_meter_consumption(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_single("liveMeasurement", "field", "lastMeterConsumption", state).await
 }
 
+#[instrument(skip(state))]
 #[get("/APIaccumulatedConsumption")]
 async fn api_accumulated_consumption(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_single("liveMeasurement", "field", "accumulatedConsumption", state).await
 }
 
+#[instrument(skip(state))]
 #[get("/APIaccumulatedConsumptionLastHour")]
 async fn api_accumulated_consumption_last_hour(
     state: &State<ClientRef>,
@@ -215,96 +228,115 @@ async fn api_accumulated_consumption_last_hour(
     .await
 }
 
+#[instrument(skip(state))]
 #[get("/APIminPower")]
 async fn api_min_power(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_single("liveMeasurement", "field", "minPower", state).await
 }
 
+#[instrument(skip(state))]
 #[get("/APIaveragePower")]
 async fn api_average_power(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_single("liveMeasurement", "field", "averagePower", state).await
 }
 
+#[instrument(skip(state))]
 #[get("/APImaxPower")]
 async fn api_max_power(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_single("liveMeasurement", "field", "maxPower", state).await
 }
 
+#[instrument(skip(state))]
 #[get("/PrisSnitt24")]
 async fn pris_snitt_24(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.pris_snitt_24.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/in6Low8")]
 async fn in_6_l_8(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.in_6_l_8.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/0_6High")]
 async fn in_0_6_high(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.in_0_6_high.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/6_12High")]
 async fn in_6_12_high(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.in_6_12_high.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/12_18High")]
 async fn in_12_18_high(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.in_12_18_high.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/18_24High")]
 async fn in_18_24_high(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.in_18_24_high.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/90_115")]
 async fn t90_115(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.t90_115.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/60_90")]
 async fn t60_90(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.t60_90.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/0_60")]
 async fn t0_60(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.t0_60.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/115_140")]
 async fn t115_140(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.t115_140.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/140_999")]
 async fn t140_999(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.t140_999.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(_state))]
 #[get("/pricePage")]
 async fn price_page(_state: &State<ClientRef>) -> status::Accepted<String> {
     todo!();
 }
 
+#[instrument(skip(state))]
 #[get("/PrisTime")]
 async fn pris_time(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.pris_time.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/PrisForhold24")]
 async fn pris_forhold_24(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.pris_forhold_24.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/PrisMax")]
 async fn pris_max(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.pris_max.to_string(), state.client.as_ref()).await
 }
 
+#[instrument(skip(state))]
 #[get("/PrisMin")]
 async fn pris_min(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.pris_min.to_string(), state.client.as_ref()).await
@@ -312,6 +344,10 @@ async fn pris_min(state: &State<ClientRef>) -> status::Accepted<String> {
 
 #[launch]
 fn rocket() -> _ {
+    let (subscriber, _guard) = get_logger();
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set global default subscriber");
+    tracing::trace!("Log setup complete");
     let client = Client::new("http://192.168.10.102:8086", "Fibaro");
     rocket::build()
         .manage(ClientRef {
