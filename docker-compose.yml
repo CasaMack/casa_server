@@ -1,0 +1,29 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  server:
+    image: areskiko/casa_server
+
+    # Needed to pass token if not set as environment variables
+    tty: true
+    stdin_open: true
+
+    # Easier access to logs
+    volumes:
+      - logVolume:/var/log/
+    
+    # Settings
+    environment:
+      # Required variables
+      - INFLUXDB_ADDR=http://localhost:8086
+      - INFLUXDB_DB_NAME=MyDatabase
+      # Optional variables
+      # - LOG_LEVEL=info # defaults to info
+
+volumes:
+  # credentials: {}
+  logvolume:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/var/log/CasaMack/casa_server'
