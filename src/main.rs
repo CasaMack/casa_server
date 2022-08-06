@@ -90,14 +90,6 @@ async fn get_refined(client: &Client) -> Result<Refined, ()> {
     let read_result = client.query(read_query).await;
     match read_result {
         Ok(result) => {
-            eprintln!("{}", result);
-            let re: Result<QueryResults<Refined>, _> = serde_json::from_str(&result);
-            match re {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("Error: {}", e);
-                }
-            };
             let mut r: QueryResults<Refined> = serde_json::from_str(&result).or(Err(()))?;
             Ok(r.results
                 .swap_remove(0)
@@ -125,7 +117,6 @@ async fn get_single_value(
         series, field, targ
     ));
 
-    eprintln!("{:?}", read_query);
     let read_result = client.query(read_query).await;
     match read_result {
         Ok(result) => {
