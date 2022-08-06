@@ -313,6 +313,9 @@ async fn pris_min(state: &State<ClientRef>) -> status::Accepted<String> {
 fn rocket() -> _ {
     let client = Client::new("http://192.168.10.102:8086", "Fibaro");
     rocket::build()
+        .manage(ClientRef {
+            client: Arc::new(client),
+        })
         .mount(
             "/",
             routes![
@@ -344,5 +347,4 @@ fn rocket() -> _ {
                 pris_min,
             ],
         )
-        .manage(Arc::new(client))
 }
