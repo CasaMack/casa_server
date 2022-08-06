@@ -15,7 +15,7 @@ use serde::Deserialize;
 
 trait QueryType {}
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct QueryResults<T>
 where
     T: QueryType,
@@ -23,51 +23,51 @@ where
     pub results: Vec<Statement<T>>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Statement<T>
 where
     T: QueryType,
 {
-    pub _statement_id: usize,
+    pub statement_id: usize,
     pub series: Vec<Serie<T>>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Serie<T>
 where
     T: QueryType,
 {
-    pub _name: String,
-    pub _columns: Vec<String>,
+    pub name: String,
+    pub columns: Vec<String>,
     pub values: Vec<T>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Refined {
-    _time: chrono::DateTime<chrono::Utc>,
-    _hour: u32,
-    _date: String,
-    pris_snitt_24: f64,
-    in_6_l_8: bool,
+    time: chrono::DateTime<chrono::Utc>,
+    date: String,
+    hour: String,
+    i8h_low: bool,
     in_0_6_high: bool,
-    in_6_12_high: bool,
     in_12_18_high: bool,
     in_18_24_high: bool,
-    t90_115: bool,
-    t60_90: bool,
-    t0_60: bool,
-    t115_140: bool,
-    t140_999: bool,
-    _i8h_low: bool,
-    pris_time: f64,
+    in_6_12_high: bool,
+    in_6_l_8: bool,
     pris_forhold_24: f64,
     pris_max: u32,
     pris_min: u32,
+    pris_snitt_24: f64,
+    pris_time: f64,
+    t0_60: bool,
+    t115_140: bool,
+    t140_999: bool,
+    t60_90: bool,
+    t90_115: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct SingleValue {
-    _time: chrono::DateTime<chrono::Utc>,
+    _time: String,
     pub value: f64,
 }
 
@@ -78,13 +78,26 @@ async fn get_refined(client: &Client) -> Result<Refined, ()> {
     let now = chrono::Utc::now();
     let read_query = ReadQuery::new(format!(
         "SELECT * FROM refined WHERE date = '{}' AND hour = '{}'",
-        now.date().to_string(),
+        now.date()
+            .to_string()
+            .split("U")
+            .collect::<Vec<&str>>()
+            .get(0)
+            .unwrap(),
         now.hour()
     ));
 
     let read_result = client.query(read_query).await;
     match read_result {
         Ok(result) => {
+            eprintln!("{}", result);
+            let re: Result<QueryResults<Refined>, _> = serde_json::from_str(&result);
+            match re {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                }
+            };
             let mut r: QueryResults<Refined> = serde_json::from_str(&result).or(Err(()))?;
             Ok(r.results
                 .swap_remove(0)
@@ -94,6 +107,7 @@ async fn get_refined(client: &Client) -> Result<Refined, ()> {
                 .swap_remove(0))
         }
         Err(e) => {
+            eprintln!("{}", e);
             tracing::error!("{}", e);
             Err(())
         }
@@ -111,6 +125,7 @@ async fn get_single_value(
         series, field, targ
     ));
 
+    eprintln!("{:?}", read_query);
     let read_result = client.query(read_query).await;
     match read_result {
         Ok(result) => {
@@ -123,6 +138,7 @@ async fn get_single_value(
                 .swap_remove(0))
         }
         Err(e) => {
+            eprintln!("{}", e);
             tracing::error!("{}", e);
             Err(())
         }
@@ -139,7 +155,6 @@ where
     F: Fn(Refined) -> String,
 {
     let val = get_refined(client).await.ok().map(closure);
-    tracing::debug!("Got value: {:?}", val);
     status::Accepted(val)
 }
 
@@ -154,7 +169,6 @@ async fn extract_single(
         .await
         .ok()
         .map(|v| v.value.to_string());
-    tracing::debug!("Got value: {:?}", val);
     status::Accepted(val)
 }
 
@@ -173,7 +187,7 @@ async fn car_charger_usage(state: &State<ClientRef>) -> status::Accepted<String>
 #[get("/easeeLadeMengde")]
 async fn easee_lade_mengde(state: &State<ClientRef>) -> status::Accepted<String> {
     status::Accepted(
-        get_single_value("EH230117", "variable", "session", state.client.as_ref())
+        get_single_value("EH230177", "variable", "session", state.client.as_ref())
             .await
             .ok()
             .map(|v| v.value.to_string()),
@@ -199,19 +213,31 @@ async fn easee_energy_per_hour(state: &State<ClientRef>) -> status::Accepted<Str
 #[instrument(skip(state))]
 #[get("/APIpower")]
 async fn api_power(state: &State<ClientRef>) -> status::Accepted<String> {
-    extract_single("liveMeasurement", "field", "power", state).await
+    extract_single("liveMeasurement", "field_name", "power", state).await
 }
 
 #[instrument(skip(state))]
 #[get("/APIlastMeterConsumption")]
 async fn api_last_meter_consumption(state: &State<ClientRef>) -> status::Accepted<String> {
-    extract_single("liveMeasurement", "field", "lastMeterConsumption", state).await
+    extract_single(
+        "liveMeasurement",
+        "field_name",
+        "lastMeterConsumption",
+        state,
+    )
+    .await
 }
 
 #[instrument(skip(state))]
 #[get("/APIaccumulatedConsumption")]
 async fn api_accumulated_consumption(state: &State<ClientRef>) -> status::Accepted<String> {
-    extract_single("liveMeasurement", "field", "accumulatedConsumption", state).await
+    extract_single(
+        "liveMeasurement",
+        "field_name",
+        "accumulatedConsumption",
+        state,
+    )
+    .await
 }
 
 #[instrument(skip(state))]
@@ -221,7 +247,7 @@ async fn api_accumulated_consumption_last_hour(
 ) -> status::Accepted<String> {
     extract_single(
         "liveMeasurement",
-        "field",
+        "field_name",
         "accumulatedConsumptionLastHour",
         state,
     )
@@ -231,19 +257,19 @@ async fn api_accumulated_consumption_last_hour(
 #[instrument(skip(state))]
 #[get("/APIminPower")]
 async fn api_min_power(state: &State<ClientRef>) -> status::Accepted<String> {
-    extract_single("liveMeasurement", "field", "minPower", state).await
+    extract_single("liveMeasurement", "field_name", "minPower", state).await
 }
 
 #[instrument(skip(state))]
 #[get("/APIaveragePower")]
 async fn api_average_power(state: &State<ClientRef>) -> status::Accepted<String> {
-    extract_single("liveMeasurement", "field", "averagePower", state).await
+    extract_single("liveMeasurement", "field_name", "averagePower", state).await
 }
 
 #[instrument(skip(state))]
 #[get("/APImaxPower")]
 async fn api_max_power(state: &State<ClientRef>) -> status::Accepted<String> {
-    extract_single("liveMeasurement", "field", "maxPower", state).await
+    extract_single("liveMeasurement", "field_name", "maxPower", state).await
 }
 
 #[instrument(skip(state))]
@@ -347,7 +373,7 @@ fn rocket() -> _ {
     let (subscriber, _guard) = get_logger();
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to set global default subscriber");
-    tracing::trace!("Log setup complete");
+    tracing::info!("Log setup complete");
     let client = Client::new("http://192.168.10.102:8086", "Fibaro");
     rocket::build()
         .manage(ClientRef {

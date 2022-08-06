@@ -10,7 +10,7 @@ pub fn get_logger() -> (
     FmtSubscriber<DefaultFields, Format, LevelFilter, NonBlocking>,
     WorkerGuard,
 ) {
-    let appender = tracing_appender::rolling::daily("./var/log", "tibber-status-server");
+    let appender = tracing_appender::rolling::daily("./var/log", "casa-server");
     let (non_blocking_appender, guard) = tracing_appender::non_blocking(appender);
 
     let level = match env::var("LOG_LEVEL") {
