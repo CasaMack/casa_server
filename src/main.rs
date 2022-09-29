@@ -75,7 +75,7 @@ impl QueryType for Refined {}
 impl QueryType for SingleValue {}
 
 async fn get_refined(client: &Client) -> Result<Refined, ()> {
-    let now = chrono::Utc::now();
+    let now = chrono::Local::now();
     let read_query = ReadQuery::new(format!(
         "SELECT * FROM refined WHERE date = '{}' AND hour = '{}'",
         now.date()
