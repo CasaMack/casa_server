@@ -44,7 +44,7 @@ where
 
 #[derive(Deserialize, Debug)]
 struct Refined {
-    time: chrono::DateTime<chrono::Utc>,
+    time: chrono::DateTime<chrono::Local>,
     date: String,
     hour: String,
     i8h_low: bool,
