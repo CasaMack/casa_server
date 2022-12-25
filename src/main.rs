@@ -44,7 +44,7 @@ where
 
 #[derive(Deserialize, Debug)]
 struct Refined {
-    time: chrono::DateTime<chrono::Local>,
+    time: chrono::DateTime<chrono::Utc>,
     date: String,
     hour: String,
     i8h_low: bool,
@@ -75,7 +75,7 @@ impl QueryType for Refined {}
 impl QueryType for SingleValue {}
 
 async fn get_refined(client: &Client) -> Result<Refined, ()> {
-    let now = chrono::Local::now();
+    let now = chrono::Utc::now().with_timezone(&chrono_tz::Europe::Oslo);
     let read_query = ReadQuery::new(format!(
         "SELECT * FROM refined WHERE date = '{}' AND hour = '{}'",
         now.date()
