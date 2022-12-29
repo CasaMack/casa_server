@@ -270,6 +270,12 @@ async fn pris_snitt_24(state: &State<ClientRef>) -> status::Accepted<String> {
 }
 
 #[instrument(skip(state))]
+#[get("/8hLow")]
+async fn in8h_low(state: &State<ClientRef>) -> status::Accepted<String> {
+    extract_refined(|r| r.i8h_low.to_string(), state.client.as_ref()).await
+}
+
+#[instrument(skip(state))]
 #[get("/in6Low8")]
 async fn in_6_l_8(state: &State<ClientRef>) -> status::Accepted<String> {
     extract_refined(|r| r.in_6_l_8.to_string(), state.client.as_ref()).await
@@ -384,6 +390,7 @@ fn rocket() -> _ {
                 api_average_power,
                 api_max_power,
                 pris_snitt_24,
+                in8h_low,
                 in_6_l_8,
                 in_0_6_high,
                 in_6_12_high,
